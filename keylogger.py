@@ -31,7 +31,7 @@ from ctypes.util import find_library
 
 
 # linux only!
-assert(sys.platform == "linux2")
+assert("linux" in sys.platform)
 
 
 x11 = ct.cdll.LoadLibrary(find_library("X11"))
