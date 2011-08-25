@@ -30,15 +30,16 @@ import ctypes as ct
 from ctypes.util import find_library
 
 
+# linux only!
 assert(sys.platform == "linux2")
 
 
-lib = find_library("X11")
-x11 = ct.cdll.LoadLibrary(lib)
-
-
-
+x11 = ct.cdll.LoadLibrary(find_library("X11"))
 display = x11.XOpenDisplay(None)
+
+
+# this will hold the keyboard state.  32 bytes, with each
+# bit representing the state for a single key.
 keyboard = (ct.c_char * 32)()
 
 shift_keys = ((6,4), (7,64))
@@ -52,7 +53,7 @@ modifiers = {
 }
 last_pressed = set()
 last_modifier_state = {}
-caps_lock = 0
+caps_lock_state = 0
 
 key_mapping = {
     1: {
@@ -144,7 +145,7 @@ def fetch_keys_raw():
 
 
 def fetch_keys():
-    global caps_lock, last_pressed, last_modifier_state
+    global caps_lock_state, last_pressed, last_modifier_state
     keypresses_raw = fetch_keys_raw()
 
 
@@ -160,7 +161,7 @@ def fetch_keys():
             shift = 1
             break
 
-    if ord(keypresses_raw[8]) & 4: caps_lock = int(not caps_lock)
+    if ord(keypresses_raw[8]) & 4: caps_lock_state = int(not caps_lock_state)
 
     pressed = []
     for i, k in enumerate(keypresses_raw):
@@ -168,7 +169,7 @@ def fetch_keys():
         if o:
             for byte,key in key_mapping.get(i, {}).iteritems():
                 if byte & o:
-                    if isinstance(key, tuple): key = key[shift or caps_lock]
+                    if isinstance(key, tuple): key = key[shift or caps_lock_state]
                     pressed.append(key)
 
     
@@ -186,9 +187,9 @@ def fetch_keys():
 
 
 
-def log(done, callback):
+def log(done, callback, sleep_interval=.005):
     while not done():
-        sleep(.005)
+        sleep(sleep_interval)
         changed, modifiers, keys = fetch_keys()
         if changed: callback(time(), modifiers, keys)
 
