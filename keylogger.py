@@ -199,6 +199,6 @@ def log(done, callback, sleep_interval=.005):
 if __name__ == "__main__":
     now = time()
     done = lambda: time() > now + 10
-    def print_keys(t, modifiers, keys): print t, modifiers, keys
+    def print_keys(t, modifiers, keys): print "%.2f   %r   %r" % (t, keys, modifiers)
 
     log(done, print_keys)
