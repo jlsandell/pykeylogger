@@ -1,9 +1,33 @@
+# Copyright (c) 2011, Andrew Moffat
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the <organization> nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 import sys
 from time import sleep, time
 import ctypes as ct
 from ctypes.util import find_library
-import struct
-from binascii import crc32
 
 
 assert(sys.platform == "linux2")
@@ -12,13 +36,22 @@ assert(sys.platform == "linux2")
 lib = find_library("X11")
 x11 = ct.cdll.LoadLibrary(lib)
 
+
+
 display = x11.XOpenDisplay(None)
 keyboard = (ct.c_char * 32)()
 
-
-
-
-shift_keys = [(6, 4), (7, 64)]
+shift_keys = ((6,4), (7,64))
+modifiers = {
+    "left shift": (6,4),
+    "right shift": (7,64),
+    "left ctrl": (4,32),
+    "right ctrl": (13,2),
+    "left alt": (8,1),
+    "right alt": (13,16)
+}
+last_pressed = set()
+last_modifier_state = {}
 caps_lock = 0
 
 key_mapping = {
@@ -101,16 +134,24 @@ key_mapping = {
     },
 }
 
+
+
+
 def fetch_keys_raw():
     x11.XQueryKeymap(display, keyboard)
     return keyboard
 
 
-last_pressed = set()
 
 def fetch_keys():
-    global caps_lock, last_pressed
+    global caps_lock, last_pressed, last_modifier_state
     keypresses_raw = fetch_keys_raw()
+
+
+    # modifier state (ctrl, alt, shift keys)
+    modifier_state = {}
+    for mod, (i, byte) in modifiers.iteritems():
+        modifier_state[mod] = bool(ord(keypresses_raw[i]) & byte)
     
     # shift pressed?
     shift = 0
@@ -133,21 +174,30 @@ def fetch_keys():
     
     tmp = pressed
     pressed = list(set(pressed).difference(last_pressed))
+    state_changed = tmp != last_pressed 
     last_pressed = tmp
 
-    pressed.sort()
-    return pressed
 
+    state_changed = last_modifier_state and (state_changed or modifier_state != last_modifier_state)
+    last_modifier_state = modifier_state
+
+    return state_changed, modifier_state, pressed
+
+
+
+
+def log(done, callback):
+    while not done():
+        sleep(.005)
+        changed, modifiers, keys = fetch_keys()
+        if changed: callback(time(), modifiers, keys)
 
 
 
 
 if __name__ == "__main__":
+    now = time()
+    done = lambda: time() > now + 10
+    def print_keys(t, modifiers, keys): print t, modifiers, keys
 
-    all_keypresses = []
-    while True:
-        sleep(.005)
-        pressed = fetch_keys()
-        if pressed:
-            all_keypresses.append((time(), pressed))
-            print pressed
+    log(done, print_keys)
