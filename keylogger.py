@@ -52,6 +52,7 @@ modifiers = {
     "right alt": (13,16)
 }
 last_pressed = set()
+last_pressed_adjusted = set()
 last_modifier_state = {}
 caps_lock_state = 0
 
@@ -145,11 +146,11 @@ def fetch_keys_raw():
 
 
 def fetch_keys():
-    global caps_lock_state, last_pressed, last_modifier_state
+    global caps_lock_state, last_pressed, last_pressed_adjusted, last_modifier_state
     keypresses_raw = fetch_keys_raw()
 
 
-    # modifier state (ctrl, alt, shift keys)
+    # check modifier states (ctrl, alt, shift keys)
     modifier_state = {}
     for mod, (i, byte) in modifiers.iteritems():
         modifier_state[mod] = bool(ord(keypresses_raw[i]) & byte)
@@ -161,8 +162,11 @@ def fetch_keys():
             shift = 1
             break
 
+    # caps lock state
     if ord(keypresses_raw[8]) & 4: caps_lock_state = int(not caps_lock_state)
 
+
+    # aggregate the pressed keys
     pressed = []
     for i, k in enumerate(keypresses_raw):
         o = ord(k)
@@ -175,8 +179,9 @@ def fetch_keys():
     
     tmp = pressed
     pressed = list(set(pressed).difference(last_pressed))
-    state_changed = tmp != last_pressed 
+    state_changed = tmp != last_pressed and (pressed or last_pressed_adjusted)
     last_pressed = tmp
+    last_pressed_adjusted = pressed
 
 
     state_changed = last_modifier_state and (state_changed or modifier_state != last_modifier_state)
@@ -198,7 +203,7 @@ def log(done, callback, sleep_interval=.005):
 
 if __name__ == "__main__":
     now = time()
-    done = lambda: time() > now + 10
+    done = lambda: time() > now + 60
     def print_keys(t, modifiers, keys): print "%.2f   %r   %r" % (t, keys, modifiers)
 
     log(done, print_keys)
