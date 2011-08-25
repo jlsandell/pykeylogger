@@ -16,6 +16,6 @@ This will print key events to stdout for 60 seconds.  If you wanted to be evil, 
 Sample output:
 
 
-    1314238675.42   ['o']   {'left shift': False, 'right alt': False, 'right shift': False, 'left alt': False, 'left ctrl': False, 'right ctrl': False}
-    1314238675.51   ['m']   {'left shift': False, 'right alt': False, 'right shift': False, 'left alt': False, 'left ctrl': False, 'right ctrl': False}
-    1314238675.65   ['g']   {'left shift': False, 'right alt': False, 'right shift': False, 'left alt': False, 'left ctrl': False, 'right ctrl': False}
+    1314238675.42   'o'   {'left shift': False, 'right alt': False, 'right shift': False, 'left alt': False, 'left ctrl': False, 'right ctrl': False}
+    1314238675.51   'm'   {'left shift': False, 'right alt': False, 'right shift': False, 'left alt': False, 'left ctrl': False, 'right ctrl': False}
+    1314238675.65   'g'   {'left shift': False, 'right alt': False, 'right shift': False, 'left alt': False, 'left ctrl': False, 'right ctrl': False}

@@ -183,6 +183,9 @@ def fetch_keys():
     last_pressed = tmp
     last_pressed_adjusted = pressed
 
+    if pressed: pressed = pressed[0]
+    else: pressed = None
+
 
     state_changed = last_modifier_state and (state_changed or modifier_state != last_modifier_state)
     last_modifier_state = modifier_state
